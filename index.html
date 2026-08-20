@@ -299,6 +299,13 @@
     <div class="card">
       <h3>Job Details</h3>
       <div class="field">
+        <label>Report Name</label>
+        <div style="display:flex; gap:8px;">
+          <input type="text" id="m_name" placeholder="e.g. Riverbend Foods — August audit" style="flex:1;">
+          <button class="btn btn-outline btn-sm" id="saveReportBtn" style="flex:0 0 auto; white-space:nowrap;">💾 Save</button>
+        </div>
+      </div>
+      <div class="field">
         <label>Client / Company</label>
         <input type="text" id="m_client" placeholder="e.g. Riverbend Foods Pty Ltd">
       </div>
@@ -430,7 +437,7 @@
     ["5.8.1", "Mounting height", "Signs must be mounted not less than 2 m and not more than 2.7 m above floor level, or immediately above the doorway if the doorway exceeds 2.7 m, unless varied by the regulatory authority."]
   ];
 
-  var state = { meta:{client:"",site:"",ref:"",date:"",surveyor:"",testtype:"",instrument:"Stopwatch / timer + Extech LT300 lux meter",recommendations:""}, areas:[] };
+  var state = { meta:{name:"",client:"",site:"",ref:"",date:"",surveyor:"",testtype:"",instrument:"Stopwatch / timer + Extech LT300 lux meter",recommendations:""}, areas:[] };
   var openAreaId = null;
   var activePhotoAreaId = null;
 
@@ -451,7 +458,7 @@
   var activeReportId = null;
 
   function emptyMeta(){
-    return {client:"",site:"",ref:"",date:"",surveyor:"",testtype:"",instrument:"Stopwatch / timer + Extech LT300 lux meter",recommendations:""};
+    return {name:"",client:"",site:"",ref:"",date:"",surveyor:"",testtype:"",instrument:"Stopwatch / timer + Extech LT300 lux meter",recommendations:""};
   }
 
   function newReportRecord(){
@@ -540,6 +547,7 @@
 
   function reportTitle(rec){
     var m = rec.meta || {};
+    if(m.name) return m.name;
     if(m.client && m.site) return m.client + ' — ' + m.site;
     if(m.client) return m.client;
     if(m.site) return m.site;
@@ -619,6 +627,7 @@
   });
 
   function hydrateMetaFields(){
+    document.getElementById('m_name').value = state.meta.name||"";
     document.getElementById('m_client').value = state.meta.client||"";
     document.getElementById('m_site').value = state.meta.site||"";
     document.getElementById('m_ref').value = state.meta.ref||"";
@@ -629,12 +638,25 @@
     document.getElementById('m_recommendations').value = state.meta.recommendations||"";
   }
 
-  ['m_client','m_site','m_ref','m_date','m_surveyor','m_testtype','m_instrument','m_recommendations'].forEach(function(id){
+  ['m_name','m_client','m_site','m_ref','m_date','m_surveyor','m_testtype','m_instrument','m_recommendations'].forEach(function(id){
     document.getElementById(id).addEventListener('input', function(){
       var key = id.replace('m_','');
       state.meta[key] = this.value;
       saveState();
     });
+  });
+
+  // ---------- explicit save ----------
+  document.getElementById('saveReportBtn').addEventListener('click', function(){
+    clearTimeout(saveTimer);
+    var rec = getActiveReport();
+    if(rec){
+      rec.meta = state.meta;
+      rec.areas = state.areas;
+      rec.updatedAt = Date.now();
+    }
+    persistReports();
+    toast('Saved as "' + reportTitle(rec) + '"');
   });
 
   // ---------- reference table ----------
