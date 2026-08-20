@@ -203,8 +203,8 @@
     padding:10px 16px calc(16px + env(safe-area-inset-bottom));
   }
   .sheet .grabber{width:36px; height:4px; background:var(--line); border-radius:3px; margin:6px auto 14px;}
-  .sheet button{width:100%; text-align:left; padding:14px 6px; font-size:15px; font-weight:600; border:none; background:none; border-bottom:1px solid #F0EEE9; font-family:inherit;}
-  .sheet button:last-of-type{border-bottom:none;}
+  .sheet > button{width:100%; text-align:left; padding:14px 6px; font-size:15px; font-weight:600; border:none; background:none; border-bottom:1px solid #F0EEE9; font-family:inherit;}
+  .sheet > button:last-of-type{border-bottom:none;}
   .sheet .cancel{color:var(--bad); text-align:center; font-weight:700; margin-top:6px;}
   .sheet-title{font-weight:800; font-size:15px; padding:4px 6px 12px;}
   .reports-list{max-height:52vh; overflow-y:auto;}
@@ -215,7 +215,7 @@
   .report-row.active .rtitle{color:var(--navy);}
   .report-row .rcur{font-size:11px; font-weight:800; color:var(--navy);}
   .report-row .rmeta{font-size:12px; color:var(--ink-soft); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
-  .report-row .rdel{flex:0 0 auto; background:none; border:none; color:var(--bad); font-size:17px; padding:6px 4px; cursor:pointer;}
+  .report-row .rdel{flex:0 0 auto; width:auto; text-align:center; background:none; border:none; border-bottom:none; color:var(--bad); font-size:17px; padding:6px 4px; cursor:pointer;}
 
   .toast{
     position:fixed; bottom:76px; left:50%; transform:translateX(-50%) translateY(20px);
