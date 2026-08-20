@@ -190,7 +190,7 @@
     padding:10px 16px calc(10px + env(safe-area-inset-bottom));
     display:flex; gap:10px; max-width:720px; margin:0 auto;
   }
-  .bottombar .btn{flex:1;}
+  .bottombar .btn{flex:1; padding:11px 6px; font-size:13px;}
 
   /* ---------- Modal (photo source picker) ---------- */
   .sheet-backdrop{
@@ -206,6 +206,16 @@
   .sheet button{width:100%; text-align:left; padding:14px 6px; font-size:15px; font-weight:600; border:none; background:none; border-bottom:1px solid #F0EEE9; font-family:inherit;}
   .sheet button:last-of-type{border-bottom:none;}
   .sheet .cancel{color:var(--bad); text-align:center; font-weight:700; margin-top:6px;}
+  .sheet-title{font-weight:800; font-size:15px; padding:4px 6px 12px;}
+  .reports-list{max-height:52vh; overflow-y:auto;}
+  .report-row{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:12px 6px; border-bottom:1px solid #F0EEE9;}
+  .report-row:last-child{border-bottom:none;}
+  .report-row .info{flex:1; min-width:0; cursor:pointer;}
+  .report-row .rtitle{font-weight:700; font-size:14.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .report-row.active .rtitle{color:var(--navy);}
+  .report-row .rcur{font-size:11px; font-weight:800; color:var(--navy);}
+  .report-row .rmeta{font-size:12px; color:var(--ink-soft); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .report-row .rdel{flex:0 0 auto; background:none; border:none; color:var(--bad); font-size:17px; padding:6px 4px; cursor:pointer;}
 
   .toast{
     position:fixed; bottom:76px; left:50%; transform:translateX(-50%) translateY(20px);
@@ -349,8 +359,9 @@
 </div>
 
 <div class="bottombar">
-  <button class="btn btn-outline" id="newReportBtn">New report</button>
-  <button class="btn btn-amber" id="generateBtn">Generate report</button>
+  <button class="btn btn-outline" id="reportsBtn">Reports</button>
+  <button class="btn btn-outline" id="newReportBtn">New</button>
+  <button class="btn btn-amber" id="generateBtn">Generate</button>
 </div>
 
 <div class="sheet-backdrop" id="photoSheet">
@@ -359,6 +370,15 @@
     <button id="takePhotoOpt">📷 Take photo</button>
     <button id="choosePhotoOpt">🖼️ Choose from library</button>
     <button class="cancel" id="cancelPhotoOpt">Cancel</button>
+  </div>
+</div>
+
+<div class="sheet-backdrop" id="reportsSheet">
+  <div class="sheet">
+    <div class="grabber"></div>
+    <div class="sheet-title">Saved reports</div>
+    <div class="reports-list" id="reportsList"></div>
+    <button class="cancel" id="closeReportsSheet">Close</button>
   </div>
 </div>
 
@@ -424,33 +444,178 @@
     t._h = setTimeout(function(){ t.classList.remove('show'); }, 1600);
   }
 
-  var STORAGE_KEY = 'br-emergency-lighting-audit-data';
+  var REPORTS_KEY = 'br-emergency-lighting-audit-reports';
+  var LEGACY_KEY = 'br-emergency-lighting-audit-data';
 
-  function loadState(){
+  var reports = [];
+  var activeReportId = null;
+
+  function emptyMeta(){
+    return {client:"",site:"",ref:"",date:"",surveyor:"",testtype:"",instrument:"Stopwatch / timer + Extech LT300 lux meter",recommendations:""};
+  }
+
+  function newReportRecord(){
+    var now = Date.now();
+    return { id: uid(), meta: emptyMeta(), areas: [], createdAt: now, updatedAt: now };
+  }
+
+  function loadReports(){
     try{
-      var raw = localStorage.getItem(STORAGE_KEY);
+      var raw = localStorage.getItem(REPORTS_KEY);
       if(raw){
         var parsed = JSON.parse(raw);
-        if(parsed.meta) state.meta = Object.assign(state.meta, parsed.meta);
-        if(parsed.areas) state.areas = parsed.areas;
+        reports = parsed.reports || [];
+        activeReportId = parsed.activeId || null;
+      } else {
+        var legacyRaw = localStorage.getItem(LEGACY_KEY);
+        if(legacyRaw){
+          var legacy = JSON.parse(legacyRaw);
+          var rec = newReportRecord();
+          if(legacy.meta) rec.meta = Object.assign(rec.meta, legacy.meta);
+          if(legacy.areas) rec.areas = legacy.areas;
+          reports = [rec];
+          activeReportId = rec.id;
+        }
       }
     }catch(e){ /* no saved data yet, or storage unavailable */ }
+
+    if(reports.length === 0){
+      var first = newReportRecord();
+      reports = [first];
+      activeReportId = first.id;
+    }
+    if(!reports.some(function(r){ return r.id === activeReportId; })){
+      activeReportId = reports[0].id;
+    }
+  }
+
+  function getActiveReport(){
+    return reports.find(function(r){ return r.id === activeReportId; });
+  }
+
+  function loadState(){
+    loadReports();
+    var rec = getActiveReport();
+    state.meta = Object.assign(emptyMeta(), rec.meta);
+    state.areas = rec.areas || [];
     hydrateMetaFields();
     renderAreas();
+  }
+
+  function persistReports(){
+    try{
+      localStorage.setItem(REPORTS_KEY, JSON.stringify({ reports: reports, activeId: activeReportId }));
+    }catch(e){
+      console.error('Save failed', e);
+      toast('Save failed — device storage may be full');
+    }
   }
 
   var saveTimer = null;
   function saveState(){
     clearTimeout(saveTimer);
     saveTimer = setTimeout(function(){
-      try{
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-      }catch(e){
-        console.error('Save failed', e);
-        toast('Save failed — device storage may be full');
+      var rec = getActiveReport();
+      if(rec){
+        rec.meta = state.meta;
+        rec.areas = state.areas;
+        rec.updatedAt = Date.now();
       }
+      persistReports();
     }, 250);
   }
+
+  function switchToReport(id){
+    var rec = reports.find(function(r){ return r.id === id; });
+    if(!rec) return;
+    activeReportId = rec.id;
+    state.meta = Object.assign(emptyMeta(), rec.meta);
+    state.areas = rec.areas || [];
+    openAreaId = null;
+    hydrateMetaFields();
+    renderAreas();
+    persistReports();
+  }
+
+  function reportTitle(rec){
+    var m = rec.meta || {};
+    if(m.client && m.site) return m.client + ' — ' + m.site;
+    if(m.client) return m.client;
+    if(m.site) return m.site;
+    return 'Untitled report';
+  }
+
+  function fmtDateTime(ts){
+    if(!ts) return '';
+    var d = new Date(ts);
+    return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+  }
+
+  function reportMetaLine(rec){
+    var m = rec.meta || {};
+    var bits = [];
+    if(m.ref) bits.push('Ref ' + m.ref);
+    if(m.date) bits.push(fmtDate(m.date));
+    var n = (rec.areas||[]).length;
+    bits.push(n + (n===1 ? ' item' : ' items'));
+    bits.push('Updated ' + fmtDateTime(rec.updatedAt));
+    return bits.join(' · ');
+  }
+
+  function renderReportsList(){
+    var listEl = document.getElementById('reportsList');
+    var sorted = reports.slice().sort(function(a,b){ return (b.updatedAt||0) - (a.updatedAt||0); });
+    var html = '';
+    sorted.forEach(function(rec){
+      var isActive = rec.id === activeReportId;
+      html += '<div class="report-row'+(isActive?' active':'')+'">';
+      html += '  <div class="info" data-open="'+rec.id+'">';
+      html += '    <div class="rtitle">'+escapeHtml(reportTitle(rec))+(isActive?' <span class="rcur">• Current</span>':'')+'</div>';
+      html += '    <div class="rmeta">'+escapeHtml(reportMetaLine(rec))+'</div>';
+      html += '  </div>';
+      html += '  <button class="rdel" data-del="'+rec.id+'" aria-label="Delete report">🗑</button>';
+      html += '</div>';
+    });
+    listEl.innerHTML = html;
+    listEl.querySelectorAll('[data-open]').forEach(function(el){
+      el.addEventListener('click', function(){
+        switchToReport(this.getAttribute('data-open'));
+        closeReportsSheet();
+        toast('Report loaded');
+      });
+    });
+    listEl.querySelectorAll('[data-del]').forEach(function(el){
+      el.addEventListener('click', function(e){
+        e.stopPropagation();
+        var id = this.getAttribute('data-del');
+        if(!confirm('Delete this report? This cannot be undone.')) return;
+        var wasActive = id === activeReportId;
+        reports = reports.filter(function(r){ return r.id !== id; });
+        if(reports.length === 0){
+          reports = [newReportRecord()];
+        }
+        if(wasActive){
+          switchToReport(reports[0].id);
+        } else {
+          persistReports();
+        }
+        renderReportsList();
+        toast('Report deleted');
+      });
+    });
+  }
+
+  function closeReportsSheet(){
+    document.getElementById('reportsSheet').classList.remove('show');
+  }
+  document.getElementById('reportsBtn').addEventListener('click', function(){
+    renderReportsList();
+    document.getElementById('reportsSheet').classList.add('show');
+  });
+  document.getElementById('closeReportsSheet').addEventListener('click', closeReportsSheet);
+  document.getElementById('reportsSheet').addEventListener('click', function(e){
+    if(e.target === this) closeReportsSheet();
+  });
 
   function hydrateMetaFields(){
     document.getElementById('m_client').value = state.meta.client||"";
@@ -711,14 +876,17 @@
   });
 
   // ---------- new report ----------
-  document.getElementById('newReportBtn').addEventListener('click', async function(){
-    if(!confirm('Start a new report? This clears all current areas and job details.')) return;
-    state = { meta:{client:"",site:"",ref:"",date:"",surveyor:"",testtype:"",instrument:"Stopwatch / timer + Extech LT300 lux meter",recommendations:""}, areas:[] };
+  document.getElementById('newReportBtn').addEventListener('click', function(){
+    var rec = newReportRecord();
+    reports.push(rec);
+    activeReportId = rec.id;
+    state.meta = emptyMeta();
+    state.areas = [];
     openAreaId = null;
     hydrateMetaFields();
     renderAreas();
-    saveState();
-    toast('New report started');
+    persistReports();
+    toast('New report started — your other reports are saved under "Reports"');
   });
 
   // ---------- generate report ----------

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'br-em-lighting-audit-v1';
+const CACHE_NAME = 'br-em-lighting-audit-v2';
 const ASSETS = [
   './index.html',
   './manifest.json',
