@@ -704,7 +704,7 @@
 
   // ---------- areas ----------
   function addArea(){
-    var a = { id: uid(), name:"", type:"", testType:"", duration:"", lux:"", compliant:null, comments:"", photo:null };
+    var a = { id: uid(), name:"", type:"", testType:"", compliant:null, comments:"", photo:null };
     state.areas.push(a);
     openAreaId = a.id;
     saveState();
@@ -761,11 +761,6 @@
       html += '    <div class="field"><label>Location / reference</label><input class="a-name" type="text" value="'+escapeHtml(a.name)+'" placeholder="e.g. Corridor near loading dock" data-id="'+a.id+'" data-field="name"></div>';
       html += '    <div class="field"><label>Fitting type</label><input class="a-target" list="typeList" type="text" value="'+escapeHtml(a.type)+'" placeholder="e.g. Exit Sign" data-id="'+a.id+'" data-field="type"></div>';
       html += '    <div class="field"><label>Test performed</label><input list="testTypeList" type="text" value="'+escapeHtml(a.testType)+'" placeholder="e.g. 6-Monthly Duration Test (90 min)" data-id="'+a.id+'" data-field="testType"></div>';
-
-      html += '    <div class="row2">';
-      html += '      <div class="field"><label>Duration achieved (min)</label><input type="number" inputmode="numeric" value="'+escapeHtml(a.duration)+'" data-id="'+a.id+'" data-field="duration"></div>';
-      html += '      <div class="field"><label>Floor lux reading</label><input type="number" inputmode="numeric" value="'+escapeHtml(a.lux)+'" data-id="'+a.id+'" data-field="lux"></div>';
-      html += '    </div>';
 
       html += '    <div class="compliance-row">';
       html += '      <button data-comp="good" data-id="'+a.id+'" class="'+(a.compliant==='good'?'sel-good':'')+'">✓ Pass</button>';
@@ -1012,8 +1007,8 @@
       var pageStyle = idx > 0 ? ' style="page-break-before: always;"' : '';
       html += '<div class="rp-area"'+pageStyle+'>';
       html += '<div class="hd"><span class="nm">'+ (escapeHtml(a.name)||'Untitled location') +'</span><span>'+ complianceLabel(a.compliant) +'</span></div>';
-      html += '<table class="rp-lux"><tr><th>Fitting Type</th><th>Test Performed</th><th>Duration (min)</th><th>Floor Lux</th></tr>';
-      html += '<tr><td>'+(escapeHtml(a.type)||'—')+'</td><td>'+(escapeHtml(a.testType)||'—')+'</td><td>'+(escapeHtml(a.duration)||'—')+'</td><td>'+(escapeHtml(a.lux)||'—')+'</td></tr></table>';
+      html += '<table class="rp-lux"><tr><th>Fitting Type</th><th>Test Performed</th></tr>';
+      html += '<tr><td>'+(escapeHtml(a.type)||'—')+'</td><td>'+(escapeHtml(a.testType)||'—')+'</td></tr></table>';
       if(a.comments){
         html += '<div class="rp-comments"><b>Comments: </b>'+escapeHtml(a.comments)+'</div>';
       }
@@ -1027,10 +1022,10 @@
 
     // 7. Summary
     html += '<div class="rp-sectionhead">7. Summary of Findings</div>';
-    html += '<table class="rp-summary"><tr><th>Location</th><th>Fitting Type</th><th>Duration (min)</th><th>Result</th></tr>';
+    html += '<table class="rp-summary"><tr><th>Location</th><th>Fitting Type</th><th>Result</th></tr>';
     state.areas.forEach(function(a){
       var mark = a.compliant==='good' ? '✓ Pass' : (a.compliant==='bad' ? '✕ Fail' : '—');
-      html += '<tr><td class="nm">'+(escapeHtml(a.name)||'Untitled location')+'</td><td>'+(escapeHtml(a.type)||'—')+'</td><td>'+(escapeHtml(a.duration)||'—')+'</td><td>'+mark+'</td></tr>';
+      html += '<tr><td class="nm">'+(escapeHtml(a.name)||'Untitled location')+'</td><td>'+(escapeHtml(a.type)||'—')+'</td><td>'+mark+'</td></tr>';
     });
     html += '</table>';
 
