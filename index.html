@@ -487,6 +487,7 @@
     if(!reports.some(function(r){ return r.id === activeReportId; })){
       activeReportId = reports[0].id;
     }
+    persistReports();
   }
 
   function getActiveReport(){
