@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>B&R Electrical — Emergency &amp; Exit Lighting Audit</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1F3864">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="EM Lighting Audit">
+<style>
+  :root{
+    --navy:#1F3864;
+    --navy-deep:#152847;
+    --amber:#E8830C;
+    --amber-deep:#C56E06;
+    --paper:#F6F5F2;
+    --card:#FFFFFF;
+    --line:#DEDBD3;
+    --ink:#1B1B18;
+    --ink-soft:#6B675F;
+    --good:#1E7A3D;
+    --good-bg:#E7F5EC;
+    --bad:#B5391D;
+    --bad-bg:#FBEAE5;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:transparent;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--ink);
+    background:var(--paper);
+    -webkit-font-smoothing:antialiased;
+  }
+  .app{max-width:720px;margin:0 auto;padding:0 0 120px 0;}
+
+  /* ---------- Header ---------- */
+  .topbar{
+    background:var(--navy);
+    color:#fff;
+    padding:18px 20px 22px;
+    border-radius:0 0 18px 18px;
+    position:relative;
+    overflow:hidden;
+  }
+  .topbar::after{
+    content:"";
+    position:absolute; right:-40px; top:-40px;
+    width:160px;height:160px;border-radius:50%;
+    background:radial-gradient(circle, rgba(232,131,12,0.22), transparent 70%);
+  }
+  .brandrow{display:flex; align-items:center; gap:12px; position:relative; z-index:1;}
+  .brandrow img{height:30px; width:auto; filter:invert(1) brightness(2);}
+  .brandrow .name{font-weight:800; font-size:15px; letter-spacing:0.02em;}
+  .brandrow .tag{font-size:11px; color:#B9C6DE; margin-top:1px;}
+  .apptitle{font-size:22px; font-weight:800; margin:16px 0 2px; position:relative; z-index:1;}
+  .appsub{font-size:12.5px; color:#B9C6DE; position:relative; z-index:1;}
+
+  /* ---------- Section shells ---------- */
+  .section{padding:18px 16px 4px;}
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:16px;
+    margin-bottom:14px;
+    box-shadow:0 1px 2px rgba(20,20,10,0.04);
+  }
+  .card h3{margin:0 0 12px; font-size:13px; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-soft); font-weight:700;}
+
+  .field{margin-bottom:10px;}
+  .field label{display:block; font-size:12px; color:var(--ink-soft); font-weight:600; margin-bottom:4px;}
+  .field input, .field textarea{
+    width:100%; padding:10px 12px; border:1.5px solid var(--line); border-radius:9px;
+    font-size:15px; font-family:inherit; background:#FDFCFB; color:var(--ink);
+  }
+  .field input:focus, .field textarea:focus{outline:none; border-color:var(--navy);}
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+
+  /* ---------- Area cards ---------- */
+  .area-list{display:flex; flex-direction:column; gap:12px;}
+  .area{
+    background:var(--card); border:1px solid var(--line); border-radius:14px;
+    overflow:hidden;
+  }
+  .area-head{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:13px 14px; cursor:pointer; gap:10px;
+  }
+  .area-head .left{display:flex; align-items:center; gap:10px; min-width:0;}
+  .area-num{
+    flex:0 0 auto; width:26px; height:26px; border-radius:50%;
+    background:var(--navy); color:#fff; font-size:12px; font-weight:800;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .area-head .titles{min-width:0;}
+  .area-head .aname{font-weight:700; font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .area-head .atarget{font-size:12px; color:var(--ink-soft);}
+  .badge{
+    flex:0 0 auto; font-size:11px; font-weight:800; padding:4px 9px; border-radius:20px;
+    text-transform:uppercase; letter-spacing:0.03em;
+  }
+  .badge.good{background:var(--good-bg); color:var(--good);}
+  .badge.bad{background:var(--bad-bg); color:var(--bad);}
+  .badge.pending{background:#F0EEE9; color:var(--ink-soft);}
+  .chevron{transition:transform 0.2s; flex:0 0 auto; color:var(--ink-soft);}
+  .area.open .chevron{transform:rotate(180deg);}
+
+  .area-body{padding:0 14px 16px; display:none;}
+  .area.open .area-body{display:block;}
+
+  .lux-grid{display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin:10px 0;}
+  .lux-grid .field label{text-align:center;}
+  .lux-grid input{text-align:center; font-weight:700; font-size:16px;}
+
+  .photo-zone{
+    margin:12px 0 10px; border:1.5px dashed var(--line); border-radius:12px;
+    display:flex; align-items:center; justify-content:center; flex-direction:column;
+    padding:18px; gap:8px; background:#FBFAF8; cursor:pointer; text-align:center;
+    min-height:120px;
+  }
+  .photo-zone.has-photo{padding:0; border-style:solid; overflow:hidden; min-height:0;}
+  .photo-zone img{width:100%; display:block; max-height:260px; object-fit:cover;}
+  .photo-zone .hint{font-size:12.5px; color:var(--ink-soft);}
+  .photo-zone .icon{font-size:22px;}
+  .photo-actions{display:flex; gap:8px; margin-top:8px;}
+  .photo-actions button{flex:1;}
+
+  .btn{
+    border:none; border-radius:10px; padding:11px 16px; font-size:14px; font-weight:700;
+    cursor:pointer; font-family:inherit;
+  }
+  .btn-amber{background:var(--amber); color:#fff;}
+  .btn-amber:active{background:var(--amber-deep);}
+  .btn-outline{background:#fff; border:1.5px solid var(--line); color:var(--ink);}
+  .btn-ghost{background:transparent; color:var(--navy); font-weight:700;}
+  .btn-danger-ghost{background:transparent; color:var(--bad); font-weight:700;}
+  .btn-full{width:100%;}
+  .btn-sm{padding:8px 12px; font-size:12.5px; border-radius:8px;}
+
+  .compliance-row{display:flex; gap:8px; margin:10px 0;}
+  .compliance-row button{
+    flex:1; padding:10px; border-radius:9px; border:1.5px solid var(--line);
+    background:#fff; font-weight:700; font-size:13px; color:var(--ink-soft); cursor:pointer;
+  }
+  .compliance-row button.sel-good{background:var(--good-bg); border-color:var(--good); color:var(--good);}
+  .compliance-row button.sel-bad{background:var(--bad-bg); border-color:var(--bad); color:var(--bad);}
+
+  .area-footer{display:flex; justify-content:space-between; align-items:center; margin-top:6px;}
+
+  .empty{
+    text-align:center; padding:36px 18px; color:var(--ink-soft); font-size:14px;
+  }
+  .empty .icon{font-size:30px; display:block; margin-bottom:8px;}
+
+  datalist{}
+
+  /* ---------- Add area launcher ---------- */
+  .add-launcher{
+    display:flex; align-items:center; gap:10px; padding:14px 16px; border-radius:14px;
+    border:1.5px dashed var(--navy); color:var(--navy); font-weight:700; font-size:14.5px;
+    background:#EEF2F8; cursor:pointer; width:100%; margin-top:2px;
+  }
+  .add-launcher .plus{
+    width:26px; height:26px; border-radius:50%; background:var(--navy); color:#fff;
+    display:flex; align-items:center; justify-content:center; font-size:16px; flex:0 0 auto;
+  }
+
+  /* ---------- Reference schedule ---------- */
+  details.ref{border:1px solid var(--line); border-radius:12px; background:#fff; margin-bottom:14px;}
+  details.ref summary{
+    padding:13px 14px; font-weight:700; font-size:13.5px; cursor:pointer; list-style:none;
+    display:flex; justify-content:space-between; align-items:center; color:var(--navy);
+  }
+  details.ref summary::-webkit-details-marker{display:none;}
+  .ref-table{padding:0 14px 14px;}
+  .ref-row{display:flex; justify-content:space-between; gap:10px; padding:7px 0; border-bottom:1px solid #F0EEE9; font-size:12.5px;}
+  .ref-row:last-child{border-bottom:none;}
+  .ref-row .t{color:var(--ink-soft); text-align:right; flex:0 0 auto; white-space:nowrap; font-weight:700;}
+  .ref-row .n{flex:1; min-width:0;}
+
+  /* ---------- Bottom action bar ---------- */
+  .bottombar{
+    position:fixed; left:0; right:0; bottom:0; z-index:20;
+    background:rgba(246,245,242,0.92); backdrop-filter:blur(8px);
+    border-top:1px solid var(--line);
+    padding:10px 16px calc(10px + env(safe-area-inset-bottom));
+    display:flex; gap:10px; max-width:720px; margin:0 auto;
+  }
+  .bottombar .btn{flex:1;}
+
+  /* ---------- Modal (photo source picker) ---------- */
+  .sheet-backdrop{
+    position:fixed; inset:0; background:rgba(20,20,15,0.45); z-index:50; display:none;
+    align-items:flex-end; justify-content:center;
+  }
+  .sheet-backdrop.show{display:flex;}
+  .sheet{
+    background:#fff; width:100%; max-width:720px; border-radius:18px 18px 0 0;
+    padding:10px 16px calc(16px + env(safe-area-inset-bottom));
+  }
+  .sheet .grabber{width:36px; height:4px; background:var(--line); border-radius:3px; margin:6px auto 14px;}
+  .sheet button{width:100%; text-align:left; padding:14px 6px; font-size:15px; font-weight:600; border:none; background:none; border-bottom:1px solid #F0EEE9; font-family:inherit;}
+  .sheet button:last-of-type{border-bottom:none;}
+  .sheet .cancel{color:var(--bad); text-align:center; font-weight:700; margin-top:6px;}
+
+  .toast{
+    position:fixed; bottom:76px; left:50%; transform:translateX(-50%) translateY(20px);
+    background:var(--navy); color:#fff; padding:10px 18px; border-radius:30px; font-size:13px;
+    font-weight:600; z-index:60; opacity:0; transition:all 0.25s; pointer-events:none;
+  }
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+
+  /* ---------- Report / print view ---------- */
+  #reportView{display:none;}
+  .rp-page{background:#fff; padding:26px 24px; max-width:800px; margin:0 auto;}
+  .rp-header{display:flex; align-items:center; gap:14px; border-bottom:2px solid var(--navy); padding-bottom:12px; margin-bottom:16px;}
+  .rp-header img{height:34px;}
+  .rp-header .co{font-weight:800; font-size:18px; color:var(--navy);}
+  .rp-header .sub{font-size:11px; color:var(--ink-soft);}
+  .rp-title{font-size:19px; font-weight:800; color:var(--navy); text-align:center; margin:6px 0 2px;}
+  .rp-subtitle{font-size:12px; text-align:center; color:var(--ink-soft); margin-bottom:16px; font-style:italic;}
+  table.rp-meta{width:100%; border-collapse:collapse; margin-bottom:20px; font-size:12.5px;}
+  table.rp-meta td{border:1px solid var(--line); padding:7px 10px;}
+  table.rp-meta td.k{background:#F2F2F2; font-weight:700; width:32%;}
+  .rp-sectionhead{font-size:14px; font-weight:800; color:var(--navy); border-bottom:1.5px solid var(--navy); padding-bottom:4px; margin:22px 0 10px;}
+  .rp-area{border:1px solid var(--line); border-radius:6px; padding:12px; margin-bottom:14px; page-break-inside:avoid;}
+  .rp-area .hd{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px;}
+  .rp-area .hd .nm{font-weight:800; font-size:14px;}
+  table.rp-lux{width:100%; border-collapse:collapse; font-size:12px; margin-bottom:8px;}
+  table.rp-lux th{background:var(--navy); color:#fff; padding:6px; text-align:center; font-size:11px;}
+  table.rp-lux td{border:1px solid var(--line); padding:6px; text-align:center;}
+  .rp-comments{font-size:12px; color:var(--ink); margin-bottom:8px;}
+  .rp-comments b{color:var(--ink-soft);}
+  .rp-photo{width:100%; max-height:320px; object-fit:cover; border-radius:6px; border:1px solid var(--line);}
+  .rp-nophoto{padding:30px; text-align:center; color:#aaa; font-size:12px; background:#FAFAFA; border:1px dashed var(--line); border-radius:6px;}
+
+  table.rp-std{width:100%; border-collapse:collapse; font-size:11.5px; margin-bottom:14px;}
+  table.rp-std th{background:var(--navy); color:#fff; padding:6px 8px; text-align:left; font-size:11px;}
+  table.rp-std td{border:1px solid var(--line); padding:6px 8px; vertical-align:top;}
+  table.rp-std td.principal{background:#EEF2F8;}
+  .rp-body-text{font-size:12px; line-height:1.5; margin-bottom:10px;}
+  ul.rp-bullets{margin:0 0 14px; padding-left:18px; font-size:12px; line-height:1.6;}
+  table.rp-schedule{width:100%; border-collapse:collapse; font-size:11px; margin-bottom:10px;}
+  table.rp-schedule th{background:var(--navy); color:#fff; padding:5px 7px; text-align:left; font-size:10.5px;}
+  table.rp-schedule td{border:1px solid var(--line); padding:5px 7px;}
+  table.rp-schedule td.tgt{text-align:center; white-space:nowrap; font-weight:700;}
+  table.rp-schedule tr:nth-child(even) td{background:#F7F6F3;}
+  table.rp-summary{width:100%; border-collapse:collapse; font-size:12px; margin-bottom:14px;}
+  table.rp-summary th{background:var(--navy); color:#fff; padding:7px; text-align:center; font-size:11px;}
+  table.rp-summary td{border:1px solid var(--line); padding:7px; text-align:center;}
+  table.rp-summary td.nm{text-align:left;}
+  table.rp-signoff{width:100%; border-collapse:collapse; font-size:12px; margin-top:6px;}
+  table.rp-signoff td{border:1px solid var(--line); padding:12px 10px; width:50%; vertical-align:top;}
+  table.rp-signoff .lbl{font-weight:700; margin-bottom:24px; display:block;}
+  .rp-note{font-size:11px; font-style:italic; color:var(--ink-soft); margin-bottom:12px;}
+
+  @media print{
+    body *{visibility:hidden;}
+    #reportView, #reportView *{visibility:visible;}
+    #reportView{display:block; position:absolute; left:0; top:0; width:100%;}
+    .rp-page{padding:0; max-width:100%;}
+  }
+
+  @media (max-width:380px){
+    .lux-grid{grid-template-columns:1fr 1fr 1fr;}
+  }
+</style>
+</head>
+<body>
+
+<div class="app" id="mainApp">
+  <div class="topbar">
+    <div class="brandrow">
+      <img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBAUEBAYFBQUGBgYHCQ4JCQgICRINDQoOFRIWFhUSFBQXGiEcFxgfGRQUHScdHyIjJSUlFhwpLCgkKyEkJST/2wBDAQYGBgkICREJCREkGBQYJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCT/wAARCACIAWgDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD6pooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigDG8Z6+/hTwlrOvR263L6bZy3QhZtokKKW25wcZx1xXzJ/wANx6h/0JFr/wCDBv8A43X0L8YP+SVeLv8AsEXX/opq+Kf2bdD0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" alt="B&R Electrical">
+      <div>
+        <div class="name">B&amp;R ELECTRICAL</div>
+        <div class="tag">ABN 35 669 511 504 · REC 32656</div>
+      </div>
+    </div>
+    <div class="apptitle">Emergency &amp; Exit Lighting Audit</div>
+    <div class="appsub">Field data capture — AS/NZS 2293.1 / .2 / .3</div>
+  </div>
+
+  <div class="section">
+    <div class="card">
+      <h3>Job Details</h3>
+      <div class="field">
+        <label>Client / Company</label>
+        <input type="text" id="m_client" placeholder="e.g. Riverbend Foods Pty Ltd">
+      </div>
+      <div class="field">
+        <label>Site Address</label>
+        <input type="text" id="m_site" placeholder="Site address">
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>Report Ref.</label>
+          <input type="text" id="m_ref" placeholder="Job #">
+        </div>
+        <div class="field">
+          <label>Date</label>
+          <input type="date" id="m_date">
+        </div>
+      </div>
+      <div class="field">
+        <label>Surveyor</label>
+        <input type="text" id="m_surveyor" placeholder="Your name">
+      </div>
+      <div class="field">
+        <label>Test Type (this visit)</label>
+        <input type="text" id="m_testtype" list="testTypeList" placeholder="e.g. 6-Monthly Duration Test">
+      </div>
+      <div class="field" style="margin-bottom:0;">
+        <label>Equipment Used</label>
+        <input type="text" id="m_instrument" value="Stopwatch / timer + Extech LT300 lux meter">
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Recommendations / Notes</h3>
+      <div class="field" style="margin-bottom:0;">
+        <label>Overall recommendations for this report</label>
+        <textarea id="m_recommendations" rows="3" placeholder="e.g. Upgrade fittings in packing area, re-test in 6 months..."></textarea>
+      </div>
+    </div>
+
+    <details class="ref">
+      <summary>Quick reference — test regime <span>▾</span></summary>
+      <div class="ref-table" id="refTable"></div>
+    </details>
+
+    <h3 style="font-size:13px; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-soft); font-weight:700; margin:6px 2px 10px;">Luminaires / Exit Signs Tested</h3>
+
+    <div class="area-list" id="areaList"></div>
+
+    <div class="empty" id="emptyState" style="display:none;">
+      <span class="icon">🚨</span>
+      No luminaires logged yet.<br>Tap below to log your first test.
+    </div>
+
+    <div class="add-launcher" id="addAreaBtn" style="margin-top:12px;">
+      <span class="plus">+</span> Add luminaire / exit sign
+    </div>
+  </div>
+</div>
+
+<div class="bottombar">
+  <button class="btn btn-outline" id="newReportBtn">New report</button>
+  <button class="btn btn-amber" id="generateBtn">Generate report</button>
+</div>
+
+<div class="sheet-backdrop" id="photoSheet">
+  <div class="sheet">
+    <div class="grabber"></div>
+    <button id="takePhotoOpt">📷 Take photo</button>
+    <button id="choosePhotoOpt">🖼️ Choose from library</button>
+    <button class="cancel" id="cancelPhotoOpt">Cancel</button>
+  </div>
+</div>
+
+<input type="file" accept="image/*" capture="environment" id="cameraInput" style="display:none;">
+<input type="file" accept="image/*" id="libraryInput" style="display:none;">
+
+<div class="toast" id="toast"></div>
+
+<div id="reportView">
+  <div class="rp-page" id="rpPage"></div>
+</div>
+
+<script>
+(function(){
+  var LOGO = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBAUEBAYFBQUGBgYHCQ4JCQgICRINDQoOFRIWFhUSFBQXGiEcFxgfGRQUHScdHyIjJSUlFhwpLCgkKyEkJST/2wBDAQYGBgkICREJCREkGBQYJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCT/wAARCACIAWgDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD6pooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigDG8Z6+/hTwlrOvR263L6bZy3QhZtokKKW25wcZx1xXzJ/wANx6h/0JFr/wCDBv8A43X0L8YP+SVeLv8AsEXX/opq+Kf2bdD0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";
+
+  var FITTING_TYPES = [
+    "Exit Sign",
+    "Emergency Luminaire (spitfire)",
+    "Combination Exit / Emergency",
+    "Emergency Downlight",
+    "Emergency Bulkhead"
+  ];
+
+  var TEST_TYPES = [
+    "Monthly Function Test",
+    "6-Monthly Duration Test (90 min)",
+    "Annual Full Test"
+  ];
+
+  var SCHEDULE = [
+    ["Monthly function / push-to-test", "Monthly", "Confirm luminaire operates on test and indicator/charge lamp is functioning normally", "~30 sec — no discharge"],
+    ["6-monthly duration test", "6-monthly", "Full battery discharge test confirming sustained operation for the rated duration", "90 minutes"],
+    ["Exit sign viewing distance", "Verification", "Sign must remain legible up to its rated viewing distance, marked on the sign face", "Commonly 24 m or 40 m"]
+  ];
+
+  var BCA_REQS = [
+    ["E4P1", "Visibility in an emergency", "A building must provide a system that ensures visibility sufficient to identify exits, paths of travel to exits and obstacles along the way, and that activates instantaneously on failure of the artificial lighting system."],
+    ["E4P2", "Identification of exits", "Suitable signs must identify the location of exits, guide occupants to them, be clearly visible, and operate during a power failure for sufficient time to evacuate."],
+    ["E4D2", "Emergency lighting requirements", "Required in every fire-isolated stairway, passageway or ramp; and in Class 5–9 storeys over 300 m² — in every corridor/passageway on the path of travel to an exit, in rooms over 100 m² not opening to a lit corridor, and in rooms over 300 m²."],
+    ["E4D5", "Exit signs", "Required above, on or adjacent to doors providing egress from a required exit, external stairways/ramps/balconies serving an exit, doors to a road or open space, horizontal exits, and any door in a storey required to have E4D2 emergency lighting."],
+    ["E4D6", "Direction signs", "Where an exit is not readily apparent, direction signs must be installed in corridors, hallways, lobbies and the like, indicating the direction to a required exit."]
+  ];
+
+  var EXIT_SIGN_REQS = [
+    ["5.4", "Sign colours", "In areas of normal illumination, exit signs must conform to AS/NZS 2293.3 as either an internally illuminated sign or an externally illuminated sign."],
+    ["5.5", "Choice of images", "Pictorial elements must conform to Appendix D and communicate one of: Straight on from here / Left from here / Right from here."],
+    ["5.6", "Size of pictorial element", "Minimum pictorial element height is set by the maximum viewing distance — 16 m → 100 mm, 24 m → 150 mm, 32 m → 200 mm (Table 5.1)."],
+    ["5.8.1", "Mounting height", "Signs must be mounted not less than 2 m and not more than 2.7 m above floor level, or immediately above the doorway if the doorway exceeds 2.7 m, unless varied by the regulatory authority."]
+  ];
+
+  var state = { meta:{client:"",site:"",ref:"",date:"",surveyor:"",testtype:"",instrument:"Stopwatch / timer + Extech LT300 lux meter",recommendations:""}, areas:[] };
+  var openAreaId = null;
+  var activePhotoAreaId = null;
+
+  function uid(){ return 'a'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+
+  function toast(msg){
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(t._h);
+    t._h = setTimeout(function(){ t.classList.remove('show'); }, 1600);
+  }
+
+  var STORAGE_KEY = 'br-emergency-lighting-audit-data';
+
+  function loadState(){
+    try{
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if(raw){
+        var parsed = JSON.parse(raw);
+        if(parsed.meta) state.meta = Object.assign(state.meta, parsed.meta);
+        if(parsed.areas) state.areas = parsed.areas;
+      }
+    }catch(e){ /* no saved data yet, or storage unavailable */ }
+    hydrateMetaFields();
+    renderAreas();
+  }
+
+  var saveTimer = null;
+  function saveState(){
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(function(){
+      try{
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      }catch(e){
+        console.error('Save failed', e);
+        toast('Save failed — device storage may be full');
+      }
+    }, 250);
+  }
+
+  function hydrateMetaFields(){
+    document.getElementById('m_client').value = state.meta.client||"";
+    document.getElementById('m_site').value = state.meta.site||"";
+    document.getElementById('m_ref').value = state.meta.ref||"";
+    document.getElementById('m_date').value = state.meta.date||"";
+    document.getElementById('m_surveyor').value = state.meta.surveyor||"";
+    document.getElementById('m_testtype').value = state.meta.testtype||"";
+    document.getElementById('m_instrument').value = state.meta.instrument||"Stopwatch / timer + Extech LT300 lux meter";
+    document.getElementById('m_recommendations').value = state.meta.recommendations||"";
+  }
+
+  ['m_client','m_site','m_ref','m_date','m_surveyor','m_testtype','m_instrument','m_recommendations'].forEach(function(id){
+    document.getElementById(id).addEventListener('input', function(){
+      var key = id.replace('m_','');
+      state.meta[key] = this.value;
+      saveState();
+    });
+  });
+
+  // ---------- reference table ----------
+  function renderRefTable(){
+    var html = '';
+    html += '<div style="font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.05em; color:var(--navy); margin:10px 0 6px;">Testing (AS/NZS 2293.2)</div>';
+    SCHEDULE.forEach(function(p){
+      html += '<div class="ref-row" style="flex-direction:column; align-items:flex-start; gap:2px;">';
+      html += '<span class="n" style="font-weight:700;">'+escapeHtml(p[0])+' <span style="font-weight:400;color:var(--ink-soft);">— '+escapeHtml(p[1])+'</span></span>';
+      html += '<span class="n" style="color:var(--ink-soft);">'+escapeHtml(p[2])+'</span>';
+      html += '<span class="t" style="align-self:flex-start;">'+escapeHtml(p[3])+'</span>';
+      html += '</div>';
+    });
+
+    html += '<div style="font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.05em; color:var(--navy); margin:16px 0 6px;">Where required (BCA 2022)</div>';
+    BCA_REQS.forEach(function(b){
+      html += '<div class="ref-row" style="flex-direction:column; align-items:flex-start; gap:2px;">';
+      html += '<span class="n" style="font-weight:700;">'+escapeHtml(b[0])+' — '+escapeHtml(b[1])+'</span>';
+      html += '<span class="n" style="color:var(--ink-soft);">'+escapeHtml(b[2])+'</span>';
+      html += '</div>';
+    });
+
+    html += '<div style="font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.05em; color:var(--navy); margin:16px 0 6px;">Exit sign design (AS/NZS 2293.1)</div>';
+    EXIT_SIGN_REQS.forEach(function(e){
+      html += '<div class="ref-row" style="flex-direction:column; align-items:flex-start; gap:2px;">';
+      html += '<span class="n" style="font-weight:700;">Clause '+escapeHtml(e[0])+' — '+escapeHtml(e[1])+'</span>';
+      html += '<span class="n" style="color:var(--ink-soft);">'+escapeHtml(e[2])+'</span>';
+      html += '</div>';
+    });
+
+    document.getElementById('refTable').innerHTML = html;
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+
+  function targetMin(targetStr){
+    if(!targetStr) return null;
+    var m = targetStr.replace(/,/g,'').match(/(\d+(\.\d+)?)/);
+    return m ? parseFloat(m[1]) : null;
+  }
+
+  // ---------- areas ----------
+  function addArea(){
+    var a = { id: uid(), name:"", type:"", testType:"", duration:"", lux:"", compliant:null, comments:"", photo:null };
+    state.areas.push(a);
+    openAreaId = a.id;
+    saveState();
+    renderAreas();
+    setTimeout(function(){
+      var el = document.querySelector('[data-area="'+a.id+'"] .a-name');
+      if(el) el.focus();
+    }, 60);
+  }
+
+  function deleteArea(id){
+    if(!confirm('Remove this luminaire entry? This cannot be undone.')) return;
+    state.areas = state.areas.filter(function(a){ return a.id !== id; });
+    saveState();
+    renderAreas();
+  }
+
+  function updateArea(id, field, value){
+    var a = state.areas.find(function(x){ return x.id===id; });
+    if(!a) return;
+    a[field] = value;
+    saveState();
+  }
+
+  function renderAreas(){
+    var list = document.getElementById('areaList');
+    var empty = document.getElementById('emptyState');
+    if(state.areas.length === 0){
+      list.innerHTML = '';
+      empty.style.display = 'block';
+      return;
+    }
+    empty.style.display = 'none';
+    var html = '';
+    state.areas.forEach(function(a, idx){
+      var isOpen = (a.id === openAreaId);
+      var badge = '<span class="badge pending">Pending</span>';
+      if(a.compliant === 'good') badge = '<span class="badge good">Pass</span>';
+      if(a.compliant === 'bad') badge = '<span class="badge bad">Fail</span>';
+
+      html += '<div class="area '+(isOpen?'open':'')+'" data-area="'+a.id+'">';
+      html += '  <div class="area-head" data-toggle="'+a.id+'">';
+      html += '    <div class="left">';
+      html += '      <div class="titles">';
+      html += '        <div class="aname">'+ (escapeHtml(a.name) || 'Untitled location') +'</div>';
+      html += '        <div class="atarget">'+ (escapeHtml(a.type) || 'No fitting type set') +'</div>';
+      html += '      </div>';
+      html += '    </div>';
+      html += badge;
+      html += '    <svg class="chevron" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      html += '  </div>';
+
+      html += '  <div class="area-body">';
+      html += '    <div class="field"><label>Location / reference</label><input class="a-name" type="text" value="'+escapeHtml(a.name)+'" placeholder="e.g. Corridor near loading dock" data-id="'+a.id+'" data-field="name"></div>';
+      html += '    <div class="field"><label>Fitting type</label><input class="a-target" list="typeList" type="text" value="'+escapeHtml(a.type)+'" placeholder="e.g. Exit Sign" data-id="'+a.id+'" data-field="type"></div>';
+      html += '    <div class="field"><label>Test performed</label><input list="testTypeList" type="text" value="'+escapeHtml(a.testType)+'" placeholder="e.g. 6-Monthly Duration Test (90 min)" data-id="'+a.id+'" data-field="testType"></div>';
+
+      html += '    <div class="row2">';
+      html += '      <div class="field"><label>Duration achieved (min)</label><input type="number" inputmode="numeric" value="'+escapeHtml(a.duration)+'" data-id="'+a.id+'" data-field="duration"></div>';
+      html += '      <div class="field"><label>Floor lux reading</label><input type="number" inputmode="numeric" value="'+escapeHtml(a.lux)+'" data-id="'+a.id+'" data-field="lux"></div>';
+      html += '    </div>';
+
+      html += '    <div class="compliance-row">';
+      html += '      <button data-comp="good" data-id="'+a.id+'" class="'+(a.compliant==='good'?'sel-good':'')+'">✓ Pass</button>';
+      html += '      <button data-comp="bad" data-id="'+a.id+'" class="'+(a.compliant==='bad'?'sel-bad':'')+'">✕ Fail</button>';
+      html += '    </div>';
+
+      html += '    <div class="field"><label>Comments</label><textarea rows="2" data-id="'+a.id+'" data-field="comments" placeholder="Indicator/charge lamp condition, visibility, obstructions, battery condition...">'+escapeHtml(a.comments)+'</textarea></div>';
+
+      html += '    <label style="display:block; font-size:12px; color:var(--ink-soft); font-weight:600; margin-bottom:4px;">Photo</label>';
+      if(a.photo){
+        html += '    <div class="photo-zone has-photo" data-photo="'+a.id+'"><img src="'+a.photo+'"></div>';
+        html += '    <div class="photo-actions"><button class="btn btn-outline btn-sm" data-photo="'+a.id+'">Retake / change</button><button class="btn btn-danger-ghost btn-sm" data-removephoto="'+a.id+'">Remove photo</button></div>';
+      } else {
+        html += '    <div class="photo-zone" data-photo="'+a.id+'"><span class="icon">📷</span><span class="hint">Tap to attach a photo of this luminaire</span></div>';
+      }
+
+      html += '    <div class="area-footer">';
+      html += '      <button class="btn-danger-ghost" data-delete="'+a.id+'" style="background:none;border:none;font-weight:700;font-size:13px;">Delete entry</button>';
+      html += '    </div>';
+      html += '  </div>';
+      html += '</div>';
+    });
+    list.innerHTML = html;
+    bindAreaEvents();
+  }
+
+  function bindAreaEvents(){
+    document.querySelectorAll('[data-toggle]').forEach(function(el){
+      el.addEventListener('click', function(){
+        var id = this.getAttribute('data-toggle');
+        openAreaId = (openAreaId === id) ? null : id;
+        renderAreas();
+      });
+    });
+    document.querySelectorAll('.area-body input[data-field], .area-body textarea[data-field]').forEach(function(el){
+      el.addEventListener('input', function(){
+        updateArea(this.getAttribute('data-id'), this.getAttribute('data-field'), this.value);
+        // live-update header labels without full rerender (avoid losing focus)
+        var card = this.closest('.area');
+        if(this.getAttribute('data-field')==='name'){
+          card.querySelector('.aname').textContent = this.value || 'Untitled location';
+        }
+        if(this.getAttribute('data-field')==='type'){
+          card.querySelector('.atarget').textContent = this.value || 'No fitting type set';
+        }
+      });
+    });
+    document.querySelectorAll('[data-comp]').forEach(function(el){
+      el.addEventListener('click', function(){
+        var id = this.getAttribute('data-id');
+        var val = this.getAttribute('data-comp');
+        var a = state.areas.find(function(x){return x.id===id;});
+        a.compliant = (a.compliant === val) ? null : val;
+        saveState();
+        renderAreas();
+        openAreaId = id;
+        renderAreas();
+      });
+    });
+    document.querySelectorAll('[data-delete]').forEach(function(el){
+      el.addEventListener('click', function(){ deleteArea(this.getAttribute('data-delete')); });
+    });
+    document.querySelectorAll('[data-photo]').forEach(function(el){
+      el.addEventListener('click', function(){
+        activePhotoAreaId = this.getAttribute('data-photo');
+        document.getElementById('photoSheet').classList.add('show');
+      });
+    });
+    document.querySelectorAll('[data-removephoto]').forEach(function(el){
+      el.addEventListener('click', function(e){
+        e.stopPropagation();
+        var id = this.getAttribute('data-removephoto');
+        var a = state.areas.find(function(x){return x.id===id;});
+        a.photo = null;
+        saveState();
+        renderAreas();
+        openAreaId = id;
+        renderAreas();
+      });
+    });
+  }
+
+  // ---------- photo capture ----------
+  document.getElementById('addAreaBtn').addEventListener('click', addArea);
+  document.getElementById('cancelPhotoOpt').addEventListener('click', function(){
+    document.getElementById('photoSheet').classList.remove('show');
+  });
+  document.getElementById('photoSheet').addEventListener('click', function(e){
+    if(e.target === this) this.classList.remove('show');
+  });
+  document.getElementById('takePhotoOpt').addEventListener('click', function(){
+    document.getElementById('photoSheet').classList.remove('show');
+    document.getElementById('cameraInput').click();
+  });
+  document.getElementById('choosePhotoOpt').addEventListener('click', function(){
+    document.getElementById('photoSheet').classList.remove('show');
+    document.getElementById('libraryInput').click();
+  });
+
+  function handlePhotoFile(file){
+    if(!file || !activePhotoAreaId) return;
+    var reader = new FileReader();
+    reader.onload = function(ev){
+      var img = new Image();
+      img.onload = function(){
+        var maxW = 1000;
+        var scale = Math.min(1, maxW/img.width);
+        var w = Math.round(img.width*scale), h = Math.round(img.height*scale);
+        var canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        var dataUrl = canvas.toDataURL('image/jpeg', 0.72);
+        var a = state.areas.find(function(x){return x.id===activePhotoAreaId;});
+        if(a){
+          a.photo = dataUrl;
+          saveState();
+          openAreaId = a.id;
+          renderAreas();
+          toast('Photo attached');
+        }
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+  document.getElementById('cameraInput').addEventListener('change', function(){
+    handlePhotoFile(this.files[0]); this.value = '';
+  });
+  document.getElementById('libraryInput').addEventListener('change', function(){
+    handlePhotoFile(this.files[0]); this.value = '';
+  });
+
+  // ---------- new report ----------
+  document.getElementById('newReportBtn').addEventListener('click', async function(){
+    if(!confirm('Start a new report? This clears all current areas and job details.')) return;
+    state = { meta:{client:"",site:"",ref:"",date:"",surveyor:"",testtype:"",instrument:"Stopwatch / timer + Extech LT300 lux meter",recommendations:""}, areas:[] };
+    openAreaId = null;
+    hydrateMetaFields();
+    renderAreas();
+    saveState();
+    toast('New report started');
+  });
+
+  // ---------- generate report ----------
+  document.getElementById('generateBtn').addEventListener('click', function(){
+    if(state.areas.length === 0){
+      toast('Add at least one area first');
+      return;
+    }
+    buildReport();
+    window.onafterprint = function(){
+      document.getElementById('reportView').style.display = 'none';
+      document.getElementById('mainApp').style.display = 'block';
+      document.querySelector('.bottombar').style.display = 'flex';
+    };
+    document.getElementById('mainApp').style.display = 'none';
+    document.querySelector('.bottombar').style.display = 'none';
+    document.getElementById('reportView').style.display = 'block';
+    setTimeout(function(){ window.print(); }, 200);
+  });
+
+  function fmtDate(d){
+    if(!d) return '[Not set]';
+    var parts = d.split('-');
+    if(parts.length!==3) return d;
+    return parts[2]+'/'+parts[1]+'/'+parts[0];
+  }
+
+  function buildReport(){
+    var m = state.meta;
+    var html = '';
+    html += '<div class="rp-header"><img src="'+LOGO+'"><div><div class="co">B&amp;R ELECTRICAL</div><div class="sub">ABN 35 669 511 504 · REC 32656 · info@bandrelectrical.com.au</div></div></div>';
+    html += '<div class="rp-title">Emergency &amp; Exit Lighting Audit Report</div>';
+    html += '<div class="rp-subtitle">Prepared in accordance with AS/NZS 2293 — Emergency Escape Lighting and Exit Signs for Buildings</div>';
+
+    html += '<table class="rp-meta">';
+    html += trMeta('Client / Company', m.client);
+    html += trMeta('Site Address', m.site);
+    html += trMeta('Report Reference', m.ref);
+    html += trMeta('Date of Inspection', fmtDate(m.date));
+    html += trMeta('Surveyor', m.surveyor);
+    html += trMeta('Test Type (this visit)', m.testtype);
+    html += trMeta('Equipment Used', m.instrument);
+    html += '</table>';
+
+    // 1. Standards & Guidelines
+    html += '<div class="rp-sectionhead">1. Applicable Standards &amp; Guidelines</div>';
+    html += '<div class="rp-body-text">This audit has been conducted to verify that the exit and emergency lighting system at this site is installed, maintained and tested in accordance with the National Construction Code (BCA) and AS/NZS 2293, and remains fit for purpose as a life-safety system. The following provisions form the basis of this report:</div>';
+    html += '<table class="rp-std"><tr><th style="width:22%">Standard</th><th>Scope / Application</th></tr>';
+    html += '<tr class="principal"><td class="principal"><b>NCC/BCA 2022 — Part E4</b></td><td class="principal"><b>PRINCIPAL REFERENCE</b> — Performance and deemed-to-satisfy provisions requiring exit and emergency lighting; AS/NZS 2293.1 is referenced in the BCA as the compliance pathway.</td></tr>';
+    html += '<tr><td>AS/NZS 2293.1</td><td>System design, installation and operation — minimum floor-level illumination along escape routes and exit sign design/installation requirements.</td></tr>';
+    html += '<tr><td>AS/NZS 2293.2</td><td>Routine service and maintenance — specifies periodic inspection and testing intervals to keep the system in a state of readiness.</td></tr>';
+    html += '<tr><td>AS/NZS 2293.3</td><td>Performance requirements for emergency luminaires and exit signs, including rated viewing distance and battery/light output requirements.</td></tr>';
+    html += '</table>';
+    html += '<div class="rp-body-text"><b>Note:</b> AS/NZS 2293 is referenced by the National Construction Code (NCC) and enforced by state fire authorities. Exact test intervals and documentation requirements may also be set by this site\'s fire safety schedule / essential safety measures register — confirm against that document where applicable.</div>';
+
+    // 2. Where required (BCA)
+    html += '<div class="rp-sectionhead">2. Where Exit &amp; Emergency Lighting Is Required (BCA 2022, Part E4)</div>';
+    html += '<table class="rp-std"><tr><th style="width:12%">Clause</th><th style="width:20%">Title</th><th>Requirement</th></tr>';
+    BCA_REQS.forEach(function(b){
+      html += '<tr><td><b>'+escapeHtml(b[0])+'</b></td><td>'+escapeHtml(b[1])+'</td><td>'+escapeHtml(b[2])+'</td></tr>';
+    });
+    html += '</table>';
+
+    // 3. Exit sign design requirements
+    html += '<div class="rp-sectionhead">3. Exit Sign Design &amp; Installation Requirements (AS/NZS 2293.1)</div>';
+    html += '<table class="rp-std"><tr><th style="width:12%">Clause</th><th style="width:20%">Title</th><th>Requirement</th></tr>';
+    EXIT_SIGN_REQS.forEach(function(e){
+      html += '<tr><td><b>'+escapeHtml(e[0])+'</b></td><td>'+escapeHtml(e[1])+'</td><td>'+escapeHtml(e[2])+'</td></tr>';
+    });
+    html += '</table>';
+    html += '<table class="rp-schedule" style="max-width:420px;"><tr><th>Maximum viewing distance</th><th>Min. pictorial element height</th></tr>';
+    html += '<tr><td class="tgt">16 m</td><td class="tgt">100 mm</td></tr>';
+    html += '<tr><td class="tgt">24 m</td><td class="tgt">150 mm</td></tr>';
+    html += '<tr><td class="tgt">32 m</td><td class="tgt">200 mm</td></tr>';
+    html += '</table>';
+    html += '<div class="rp-note">Table 5.1 — Minimum pictorial element heights (AS/NZS 2293.1). Permitted pictorial messages: "Straight on from here", "Left from here", "Right from here".</div>';
+
+    // 4. Methodology
+    html += '<div class="rp-sectionhead">4. Methodology &amp; Instrumentation</div>';
+    html += '<ul class="rp-bullets">';
+    html += '<li>Each luminaire/exit sign was activated via its test facility (push-to-test) or by simulating a mains supply failure, as appropriate to the test type being performed.</li>';
+    html += '<li>Duration of sustained operation was timed with a stopwatch/timer against the rated discharge period.</li>';
+    html += '<li>Floor-level illuminance along the escape path was checked with a calibrated lux meter (Extech LT300) where required.</li>';
+    html += '<li>Exit signs were visually checked for legibility, correct orientation, and freedom from obstruction.</li>';
+    html += '<li>Indicator/charge lamp condition was checked on each luminaire to confirm normal battery charging status.</li>';
+    html += '</ul>';
+
+    // 5. Reference schedule
+    html += '<div class="rp-sectionhead">5. Test Regime Reference Schedule</div>';
+    html += '<table class="rp-schedule"><tr><th>Test / Requirement</th><th style="width:14%">Frequency</th><th>What\'s Checked</th><th style="width:16%">Benchmark</th></tr>';
+    SCHEDULE.forEach(function(s){
+      html += '<tr><td>'+escapeHtml(s[0])+'</td><td class="tgt">'+escapeHtml(s[1])+'</td><td>'+escapeHtml(s[2])+'</td><td class="tgt">'+escapeHtml(s[3])+'</td></tr>';
+    });
+    html += '</table>';
+    html += '<div class="rp-note">Note: exact test intervals are ultimately governed by this site\'s fire safety schedule under AS/NZS 2293.2 — the frequencies above reflect common industry practice.</div>';
+
+    // 6. Survey Results
+    html += '<div class="rp-sectionhead">6. Survey Results</div>';
+    state.areas.forEach(function(a, idx){
+      var pageStyle = idx > 0 ? ' style="page-break-before: always;"' : '';
+      html += '<div class="rp-area"'+pageStyle+'>';
+      html += '<div class="hd"><span class="nm">'+ (escapeHtml(a.name)||'Untitled location') +'</span><span>'+ complianceLabel(a.compliant) +'</span></div>';
+      html += '<table class="rp-lux"><tr><th>Fitting Type</th><th>Test Performed</th><th>Duration (min)</th><th>Floor Lux</th></tr>';
+      html += '<tr><td>'+(escapeHtml(a.type)||'—')+'</td><td>'+(escapeHtml(a.testType)||'—')+'</td><td>'+(escapeHtml(a.duration)||'—')+'</td><td>'+(escapeHtml(a.lux)||'—')+'</td></tr></table>';
+      if(a.comments){
+        html += '<div class="rp-comments"><b>Comments: </b>'+escapeHtml(a.comments)+'</div>';
+      }
+      if(a.photo){
+        html += '<img class="rp-photo" src="'+a.photo+'">';
+      } else {
+        html += '<div class="rp-nophoto">No photo attached</div>';
+      }
+      html += '</div>';
+    });
+
+    // 7. Summary
+    html += '<div class="rp-sectionhead">7. Summary of Findings</div>';
+    html += '<table class="rp-summary"><tr><th>Location</th><th>Fitting Type</th><th>Duration (min)</th><th>Result</th></tr>';
+    state.areas.forEach(function(a){
+      var mark = a.compliant==='good' ? '✓ Pass' : (a.compliant==='bad' ? '✕ Fail' : '—');
+      html += '<tr><td class="nm">'+(escapeHtml(a.name)||'Untitled location')+'</td><td>'+(escapeHtml(a.type)||'—')+'</td><td>'+(escapeHtml(a.duration)||'—')+'</td><td>'+mark+'</td></tr>';
+    });
+    html += '</table>';
+
+    // 8. Recommendations
+    html += '<div class="rp-sectionhead">8. Recommendations</div>';
+    html += '<div class="rp-body-text">'+ (m.recommendations ? escapeHtml(m.recommendations) : '[No recommendations recorded]') +'</div>';
+
+    document.getElementById('rpPage').innerHTML = html;
+  }
+
+  function trMeta(k,v){
+    return '<tr><td class="k">'+k+'</td><td>'+ (v ? escapeHtml(v) : '[Not set]') +'</td></tr>';
+  }
+  function complianceLabel(c){
+    if(c==='good') return '<span style="color:#1E7A3D;font-weight:800;font-size:11px;">✓ PASS</span>';
+    if(c==='bad') return '<span style="color:#B5391D;font-weight:800;font-size:11px;">✕ FAIL</span>';
+    return '<span style="color:#999;font-weight:800;font-size:11px;">NOT ASSESSED</span>';
+  }
+
+  // datalists for fitting type and test type
+  var dl1 = document.createElement('datalist');
+  dl1.id = 'typeList';
+  FITTING_TYPES.forEach(function(t){
+    var opt = document.createElement('option');
+    opt.value = t;
+    dl1.appendChild(opt);
+  });
+  document.body.appendChild(dl1);
+
+  var dl2 = document.createElement('datalist');
+  dl2.id = 'testTypeList';
+  TEST_TYPES.forEach(function(t){
+    var opt = document.createElement('option');
+    opt.value = t;
+    dl2.appendChild(opt);
+  });
+  document.body.appendChild(dl2);
+
+  renderRefTable();
+  loadState();
+})();
+</script>
+
+<script>
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', function(){
+      navigator.serviceWorker.register('sw.js').catch(function(err){
+        console.log('Service worker registration failed:', err);
+      });
+    });
+  }
+</script>
+</body>
+</html>
